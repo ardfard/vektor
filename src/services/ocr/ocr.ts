@@ -1,31 +1,45 @@
 import { GoogleGenerativeAI } from "@google/generative-ai"
-import { readFileSync } from "fs"
-import type { GoogleGenAIConfig } from "./Config.js"
+import { Effect } from "effect"
+import type { OCRConfig } from "./Config.js"
 
-async function processFile(content: Buffer, mimeType: string, config: GoogleGenAIConfig) {
-  const generativeAi = new GoogleGenerativeAI(config.apiKey)
-  const model = generativeAi.getGenerativeModel({
-    model: "gemini-1.5-flash"
-  })
-
-  const response = await model.generateContent([
-    {
-      inlineData: {
-        mimeType,
-        data: content.toString("base64")
-      }
-    },
-    "extract the structured data and return it in JSON format"
-  ])
-
-  const result = await response.response.text()
-
-  return result
+export class OCRServiceError extends Error {
+  constructor(message: string, readonly cause?: unknown) {
+    super(message, { cause })
+  }
 }
 
-const res = await processFile(readFileSync("test.pdf"), "application/pdf", {
-  type: "google-genai",
-  apiKey: "AIzaSyCwhJUsGlN8etI_pDGqqLI1KW1P4uDntEo"
-})
+export interface IOCRService {
+  process(content: Buffer, mimeType: string): Effect.Effect<string, OCRServiceError>
+}
 
-console.log(res)
+export class OCRServiceImpl implements IOCRService {
+  readonly config: OCRConfig
+
+  constructor(config: OCRConfig) {
+    this.config = config
+  }
+
+  process(content: Buffer, mimeType: string) {
+    const apiKey = this.config.apiKey
+    const generativeAi = new GoogleGenerativeAI(apiKey)
+    const model = generativeAi.getGenerativeModel({
+      model: "gemini-1.5-flash"
+    })
+
+    return Effect.tryPromise(() =>
+      model.generateContent([
+        {
+          inlineData: {
+            mimeType,
+            data: content.toString("base64")
+          }
+        },
+        "extract the structured data and return it in JSON format"
+      ])
+    ).pipe(
+      Effect.tap((result) => Effect.log(result)),
+      Effect.map((result) => result.response.text()),
+      Effect.catchAll((e) => Effect.fail(new OCRServiceError(e.message)))
+    )
+  }
+}
