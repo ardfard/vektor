@@ -1,7 +1,6 @@
 import { Effect, Layer } from "effect"
 import * as path from "path"
-import { StorageConfigContext } from "../src/services/storage/Config.js"
-import { LiveStorage, StorageService } from "../src/services/storage/Storage.js"
+import { StorageConfigContext, StorageService, StorageServiceLive } from "../src/services/storage/index.js"
 
 const upload = Effect.gen(function*() {
   const storage = yield* StorageService
@@ -19,7 +18,7 @@ const configLayer = Layer.succeed(
   }
 )
 
-const layer = LiveStorage.pipe(Layer.provide(configLayer))
+const layer = StorageServiceLive.pipe(Layer.provide(configLayer))
 
 const exit = await Effect.runPromiseExit(
   upload.pipe(

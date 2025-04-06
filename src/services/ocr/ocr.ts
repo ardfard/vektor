@@ -26,20 +26,22 @@ export class OCRServiceImpl implements IOCRService {
       model: "gemini-1.5-flash"
     })
 
-    return Effect.tryPromise(() =>
-      model.generateContent([
-        {
-          inlineData: {
-            mimeType,
-            data: content.toString("base64")
-          }
-        },
-        "extract the structured data and return it in JSON format"
-      ])
-    ).pipe(
-      Effect.tap((result) => Effect.log(result)),
-      Effect.map((result) => result.response.text()),
-      Effect.catchAll((e) => Effect.fail(new OCRServiceError(e.message)))
-    )
+    return Effect.gen(function*() {
+      const result = yield* Effect.tryPromise({
+        try: () =>
+          model.generateContent([
+            {
+              inlineData: {
+                mimeType,
+                data: content.toString("base64")
+              }
+            },
+            "extract the structured data and return it in JSON format"
+          ]),
+        catch: (error) => new OCRServiceError(`Failed to process OCR: ${error}`)
+      })
+      yield* Effect.log(result)
+      return result.response.text()
+    })
   }
 }
