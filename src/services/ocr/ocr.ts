@@ -9,7 +9,7 @@ export class OCRServiceError extends Error {
 }
 
 export interface IOCRService {
-  process(content: Buffer, mimeType: string): Effect.Effect<string, OCRServiceError>
+  process(content: Buffer, jsonSpec: string, mimeType: string): Effect.Effect<string, OCRServiceError>
 }
 
 export class OCRServiceImpl implements IOCRService {
@@ -19,7 +19,7 @@ export class OCRServiceImpl implements IOCRService {
     this.config = config
   }
 
-  process(content: Buffer, mimeType: string) {
+  process(content: Buffer, jsonSpec: string, mimeType: string) {
     const apiKey = this.config.apiKey
     const generativeAi = new GoogleGenerativeAI(apiKey)
     const model = generativeAi.getGenerativeModel({
@@ -36,7 +36,7 @@ export class OCRServiceImpl implements IOCRService {
                 data: content.toString("base64")
               }
             },
-            "extract the structured data and return it in JSON format"
+            `extract the structured data and return it in JSON format, the json spec is:\n ${jsonSpec}`
           ]),
         catch: (error) => new OCRServiceError(`Failed to process OCR: ${error}`)
       })

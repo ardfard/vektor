@@ -10,6 +10,11 @@ const ocr = Effect.gen(function*() {
   const ocrService = yield* OCRService
   const result = yield* ocrService.process(
     Buffer.from(buffer.buffer, buffer.byteOffset, buffer.byteLength),
+    `{
+      "name": "string",
+      "age": "number",
+      "email": "string"
+    }`,
     "application/pdf"
   )
   yield* Effect.log(result)

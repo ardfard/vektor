@@ -2,6 +2,7 @@ import { HttpApiBuilder, HttpApiSwagger, HttpMiddleware } from "@effect/platform
 import { BunHttpServer, BunRuntime } from "@effect/platform-bun"
 import { Console, Effect, Layer } from "effect"
 import { ApiLive } from "./Api.js"
+import { OCRService } from "./services/ocr/index.js"
 import { StorageConfigContext, StorageServiceLive } from "./services/storage/index.js"
 
 const configLayer = Layer.succeed(StorageConfigContext, {
@@ -15,6 +16,7 @@ const server = HttpApiBuilder.serve(HttpMiddleware.logger).pipe(
   Layer.provide(HttpApiBuilder.middlewareCors()),
   Layer.provide(ApiLive),
   Layer.provide(StorageServiceLive.pipe(Layer.provide(configLayer))),
+  Layer.provide(OCRService.Default),
   Layer.provide(BunHttpServer.layer({ port: 3000 }))
 )
 
