@@ -1,5 +1,5 @@
-import React from 'react';
 import { AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
+import React from 'react';
 import { ProcessingResult } from '../types';
 
 interface ResultDisplayProps {
@@ -66,12 +66,15 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({
             Your document has been successfully processed
           </p>
           
-          <div className="mt-4 overflow-hidden rounded-lg border border-green-200 bg-white">
-            <div className="p-3 bg-green-100">
+          <div 
+            className="mt-4 rounded-lg border border-green-200 bg-white flex flex-col overflow-hidden"
+            style={{ resize: 'both', overflow: 'auto', minWidth: '200px', minHeight: '150px' }}
+          >
+            <div className="p-3 bg-green-100 border-b border-green-200 flex-shrink-0">
               <h4 className="text-sm font-medium text-green-800">Result JSON</h4>
             </div>
-            <div className="p-4 overflow-auto" style={{ maxHeight: '300px' }}>
-              <pre className="text-xs font-mono text-gray-800 whitespace-pre overflow-x-auto">
+            <div className="p-4 flex-grow overflow-auto">
+              <pre className="text-xs font-mono text-gray-800 whitespace-pre">
                 {JSON.stringify(result.data, null, 2)}
               </pre>
             </div>
