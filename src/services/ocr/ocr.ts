@@ -9,7 +9,7 @@ export class OCRServiceError extends Error {
 }
 
 export interface IOCRService {
-  process(content: Buffer, jsonSpec: string, mimeType: string): Effect.Effect<string, OCRServiceError>
+  process(content: Buffer, jsonSpec: string, mimeType: string): Effect.Effect<object, OCRServiceError>
 }
 
 export class OCRServiceImpl implements IOCRService {
@@ -23,7 +23,7 @@ export class OCRServiceImpl implements IOCRService {
     const apiKey = this.config.apiKey
     const generativeAi = new GoogleGenerativeAI(apiKey)
     const model = generativeAi.getGenerativeModel({
-      model: "gemini-1.5-flash"
+      model: "gemini-2.0-flash-lite"
     })
 
     return Effect.gen(function*() {
@@ -36,12 +36,18 @@ export class OCRServiceImpl implements IOCRService {
                 data: content.toString("base64")
               }
             },
-            `extract the structured data and return it in JSON format, the json spec is:\n ${jsonSpec}`
+            `extract the structured data and return it in JSON format, the json spec is:\n ${jsonSpec}. Always return the raw JSON object, do not include any other text.`
           ]),
         catch: (error) => new OCRServiceError(`Failed to process OCR: ${error}`)
       })
-      yield* Effect.log(result)
-      return result.response.text()
+      yield* Effect.log(result.response.text())
+      // Clean the response text: remove markdown code fences and language identifier
+      const rawText = result.response.text()
+      let cleanedText = rawText.replace(/^\s*```json\s*/i, "") // Remove ```json prefix (case-insensitive)
+      cleanedText = cleanedText.replace(/\s*```\s*$/, "") // Remove ``` suffix
+      cleanedText = cleanedText.trim() // Trim final whitespace
+      yield* Effect.log(`Cleaned Text: ${cleanedText}`) // Log cleaned text for debugging
+      return JSON.parse(cleanedText) // Parse the cleaned text
     })
   }
 }

@@ -31,12 +31,12 @@ const ProcessDocumentApi = HttpApiGroup.make("process-document").add(
     .setPayload(
       HttpApiSchema.Multipart(
         Schema.Struct({
-          jsonSpec: Schema.String,
+          spec: Schema.String,
           file: Multipart.SingleFileSchema
         })
       )
     )
-    .addSuccess(Schema.String)
+    .addSuccess(Schema.Object)
 )
 
 const Api = HttpApi.make("Vektor").add(StorageApi).add(ProcessDocumentApi)
@@ -75,7 +75,7 @@ const ProcessDocumentApiLive = HttpApiBuilder.group(
   Api,
   "process-document",
   (handlers) =>
-    handlers.handle("process-document", ({ payload: { file, jsonSpec } }) =>
+    handlers.handle("process-document", ({ payload: { file, spec } }) =>
       Effect.gen(function*() {
         const ocrService = yield* OCRService
 
@@ -86,7 +86,7 @@ const ProcessDocumentApiLive = HttpApiBuilder.group(
             (e) => new HttpApiDecodeError({ message: String(e), issues: [] })
           )
         )
-        const result = yield* ocrService.process(buf, jsonSpec, file.contentType)
+        const result = yield* ocrService.process(buf, spec, file.contentType)
         return result
       }).pipe(
         Effect.mapError(
