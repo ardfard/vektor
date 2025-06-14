@@ -11,7 +11,6 @@ import { HttpApiDecodeError } from "@effect/platform/HttpApiError"
 import { Console, Effect, Layer, Schema } from "effect"
 import type { ParsedPath } from "path"
 import * as path from "path"
-import { OCRService } from "./services/ocr/index.js"
 import { StorageService } from "./services/storage/index.js"
 
 const StorageApi = HttpApiGroup.make("storage").add(
@@ -24,19 +23,6 @@ const StorageApi = HttpApiGroup.make("storage").add(
       )
     )
     .addSuccess(Schema.String)
-)
-
-const ProcessDocumentApi = HttpApiGroup.make("process-document").add(
-  HttpApiEndpoint.post("process-document")`/process-document`
-    .setPayload(
-      HttpApiSchema.Multipart(
-        Schema.Struct({
-          spec: Schema.String,
-          file: Multipart.SingleFileSchema
-        })
-      )
-    )
-    .addSuccess(Schema.Object)
 )
 
 const Api = HttpApi.make("Vektor").add(StorageApi).add(ProcessDocumentApi)
@@ -64,30 +50,6 @@ const StorageApiLive = HttpApiBuilder.group(
         )
         yield* Console.log(buf)
         return "upload success"
-      }).pipe(
-        Effect.mapError(
-          (e) => new HttpApiDecodeError({ message: String(e), issues: [] })
-        )
-      ))
-)
-
-const ProcessDocumentApiLive = HttpApiBuilder.group(
-  Api,
-  "process-document",
-  (handlers) =>
-    handlers.handle("process-document", ({ payload: { file, spec } }) =>
-      Effect.gen(function*() {
-        const ocrService = yield* OCRService
-
-        const fs = yield* FileSystem.FileSystem
-        const buf = yield* fs.readFile(file.path).pipe(
-          Effect.map((buf) => Buffer.from(buf)),
-          Effect.mapError(
-            (e) => new HttpApiDecodeError({ message: String(e), issues: [] })
-          )
-        )
-        const result = yield* ocrService.process(buf, spec, file.contentType)
-        return result
       }).pipe(
         Effect.mapError(
           (e) => new HttpApiDecodeError({ message: String(e), issues: [] })
